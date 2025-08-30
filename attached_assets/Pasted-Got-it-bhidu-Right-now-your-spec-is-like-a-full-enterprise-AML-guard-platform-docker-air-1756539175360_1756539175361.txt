@@ -1,0 +1,126 @@
+Got it, bhidu ⚡🔥
+Right now your spec is like a full **enterprise AML guard platform** (docker, airflow, kafka, mlflow, dbt, redis, next.js, etc.). Replit isn’t meant for running heavy infra like Kafka, Airflow, MinIO, or MLflow directly. But you can still **develop the core microservices and schema locally in Replit** and mock/stub the heavy infra with lighter alternatives.
+
+Here’s a **Replit-friendly prompt** (condensed, dev-first, no heavy infra), so you can paste into Replit and start iterating:
+
+---
+
+### Replit Prompt: `amlguard (dev mode)`
+
+**Project structure** (simplified for Replit):
+
+```
+amlguard/
+  services/
+    api/      (FastAPI)
+    ml/       (ML training + inference, rules engine)
+    stream/   (mock Kafka consumer/producer using asyncio queues or Redis pub/sub)
+    web/      (Next.js or Vite + React frontend)
+  scripts/
+    seed_synthetic_data.py
+    generate_fake_kyc.py
+    init_db.sql
+  packages/
+    shared/   (Pydantic schemas, feature contracts)
+  docs/
+    model_card.md
+    risk_policy.md
+```
+
+---
+
+### 1. Database (Replit friendly)
+
+* Use **SQLite** (via `sqlalchemy` + `databases`) instead of Postgres for dev.
+* Still keep schema same as production (customers, accounts, transactions, alerts, cases, audit\_logs, model\_registry).
+* Example env:
+
+```env
+DATABASE_URL=sqlite+aiosqlite:///./amlguard.db
+JWT_SECRET=devsecret
+```
+
+* Run `scripts/init_db.sql` automatically on first boot.
+
+---
+
+### 2. API (FastAPI)
+
+* Endpoints:
+
+  * `POST /ingest/transaction` → validate + insert into DB + push to mock stream (asyncio queue).
+  * `GET /alerts` (filter + pagination).
+  * `POST /alerts/{id}/assign`, update status.
+  * `POST /cases` CRUD.
+* Use JWT auth for role-based masking of PII.
+* Auto docs with Swagger.
+
+---
+
+### 3. ML Service
+
+* Offline feature builders (rolling sums, velocity, geo mismatch).
+* Lightweight models:
+
+  * `xgboost` supervised classifier.
+  * `sklearn` IsolationForest for anomaly detection.
+* Ensemble with simple weighted average.
+* Expose FastAPI:
+
+  * `POST /predict` (transaction → risk score + reason).
+  * `GET /model/version`.
+
+---
+
+### 4. Rules Engine
+
+* YAML-based rule configs (in `services/ml/rules/*.yaml`).
+* Example: "more than 5 small deposits in 24h then 1 large withdrawal".
+* Engine loads YAML, evaluates transaction, returns rule hits.
+
+---
+
+### 5. Stream Service
+
+* Instead of Kafka → use **asyncio Queue** or Redis (Replit supports it).
+* Consumer listens to `transactions.raw`, calls ML `/predict`, applies rules, inserts alert into DB if triggered.
+* Producer (`scripts/seed_synthetic_data.py`) pushes synthetic transactions.
+
+---
+
+### 6. Web (Frontend)
+
+* Use **Next.js (if supported)** or fallback to **Vite + React + Tailwind**.
+* Pages:
+
+  * `/login`, `/dashboard`, `/alerts`, `/cases`, `/rules`, `/models`.
+* Components:
+
+  * Alert list with filters.
+  * Alert detail (transaction + feature importances).
+  * Rules editor (JSON/YAML editor with preview).
+* Auth with NextAuth mock (or JWT login).
+
+---
+
+### 7. Synthetic Data
+
+* `scripts/generate_fake_kyc.py` → customers, accounts.
+* `scripts/seed_synthetic_data.py` → transaction streams with suspicious patterns.
+* Option: bulk insert to DB or push to stream.
+
+---
+
+### 8. Observability
+
+* Add `/metrics` (Prometheus format) to API + ML.
+* Basic structlog JSON logging with correlation IDs.
+* Slack webhook config stub (no external call in Replit, but log the event).
+
+---
+
+✅ This prompt keeps **all your logic & workflows intact**, but replaces infra (Kafka → asyncio, Postgres → SQLite, Airflow/dbt → skipped or mocked). That way, you can run **API + ML + Stream + Web** **directly on Replit**, seed synthetic data, and demo the AML workflow.
+
+---
+
+👉 Do you want me to **actually write the `docker-compose.yml` version for production**, and a **Replit-only `main.py` entrypoint** that wires up API + ML + Stream with asyncio (mock infra)?
