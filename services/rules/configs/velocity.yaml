@@ -1,0 +1,118 @@
+# High Velocity Transaction Rules
+# Detects rapid transaction patterns that may indicate money laundering
+
+name: "velocity_detection"
+description: "Detects high-velocity transaction patterns indicating potential money laundering"
+enabled: true
+severity: "high"
+score: 0.7
+logic: "OR"
+
+conditions:
+  # High transaction frequency in short time periods
+  - field: "velocity_1h"
+    operator: "greater_than"
+    value: 5
+    description: "More than 5 transactions in 1 hour"
+  
+  - field: "velocity_24h"
+    operator: "greater_than"
+    value: 15
+    description: "More than 15 transactions in 24 hours"
+  
+  - field: "velocity_7d"
+    operator: "greater_than"
+    value: 50
+    description: "More than 50 transactions in 7 days"
+  
+  # Large volume in short time
+  - conditions:
+      - field: "amount"
+        operator: "greater_than"
+        value: 25000
+      - field: "velocity_1h"
+        operator: "greater_than"
+        value: 3
+    logic: "AND"
+    description: "Large amounts with high 1-hour velocity"
+  
+  # Rapid international transfers
+  - conditions:
+      - field: "transaction_type"
+        operator: "contains"
+        value: "international"
+      - field: "velocity_24h"
+        operator: "greater_than"
+        value: 5
+    logic: "AND"
+    description: "Multiple international transfers in 24 hours"
+  
+  # ATM withdrawals in rapid succession
+  - conditions:
+      - field: "transaction_type"
+        operator: "contains"
+        value: "atm"
+      - field: "velocity_1h"
+        operator: "greater_than"
+        value: 8
+    logic: "AND"
+    description: "Multiple ATM withdrawals in 1 hour"
+
+# Velocity thresholds by transaction type
+transaction_type_thresholds:
+  "Wire Transfer":
+    hourly: 3
+    daily: 8
+    weekly: 20
+  
+  "ATM Withdrawal":
+    hourly: 10
+    daily: 25
+    weekly: 100
+  
+  "Online Transfer":
+    hourly: 8
+    daily: 20
+    weekly: 60
+  
+  "International Transfer":
+    hourly: 2
+    daily: 5
+    weekly: 15
+
+# Risk factors
+risk_factors:
+  - name: "transaction_clustering"
+    description: "Transactions occurring in tight clusters"
+    threshold: "90% of transactions within 10% of time period"
+  
+  - name: "amount_consistency"
+    description: "Similar amounts in rapid succession"
+    threshold: "5+ transactions within 10% amount variance"
+  
+  - name: "geographic_spread"
+    description: "Transactions from multiple locations rapidly"
+    threshold: "3+ different cities within 2 hours"
+
+# Additional metadata
+tags: ["velocity", "frequency", "rapid", "clustering"]
+regulatory_basis: "FinCEN Guidance on Suspicious Activity Reporting"
+alert_template: "High-velocity transaction pattern detected: ${velocity_24h} transactions in 24 hours"
+
+# Investigation guidance
+investigation_steps:
+  - "Map transaction timeline and identify clusters"
+  - "Verify customer presence at transaction locations"
+  - "Review account access logs and authentication methods"
+  - "Check for automated or programmatic transaction patterns"
+  - "Investigate business justification for transaction frequency"
+  - "Review customer's normal transaction patterns for comparison"
+
+exceptions:
+  - "Payroll processing during scheduled pay periods"
+  - "Merchant settlement transactions"
+  - "Investment fund distributions"
+  - "Documented emergency or time-sensitive business needs"
+
+monitoring_period: "30 days"
+baseline_calculation: "Customer's previous 90-day transaction pattern"

@@ -1,0 +1,136 @@
+# Geographic Risk Rules
+# Detects transactions from high-risk jurisdictions and unusual geographic patterns
+
+name: "geographic_risk_detection"
+description: "Detects transactions from high-risk countries and unusual geographic patterns"
+enabled: true
+severity: "high"
+score: 0.6
+logic: "OR"
+
+conditions:
+  # High-risk countries (simplified FATF list)
+  - field: "location.country"
+    operator: "in"
+    value: ["IR", "KP", "AF", "MM", "BD", "GH", "KH", "PK", "SY", "UG", "VU", "YE"]
+    description: "Transaction from high-risk jurisdiction"
+  
+  # Sanctioned countries
+  - field: "location.country"
+    operator: "in"
+    value: ["IR", "KP", "SY", "RU", "BY"]
+    description: "Transaction from sanctioned country"
+  
+  # Multiple countries in short time
+  - field: "geographic_velocity"
+    operator: "greater_than"
+    value: 2
+    description: "Transactions from multiple countries in short time"
+  
+  # Large amounts from medium-risk countries
+  - conditions:
+      - field: "location.country"
+        operator: "in"
+        value: ["CN", "RU", "VE", "MY", "TH", "LB", "UA", "TR"]
+      - field: "amount"
+        operator: "greater_than"
+        value: 25000
+    logic: "AND"
+    description: "Large amount from medium-risk country"
+  
+  # Transactions from countries customer has no previous activity
+  - field: "is_new_country"
+    operator: "equals"
+    value: true
+    description: "First transaction from this country"
+  
+  # Unusual geographic distance in short time
+  - field: "geographic_distance_anomaly"
+    operator: "equals"
+    value: true
+    description: "Geographically impossible transaction pattern"
+
+# Country risk classifications
+country_risk_levels:
+  high_risk:
+    countries: ["IR", "KP", "AF", "MM", "BD", "GH", "KH", "PK", "SY", "UG", "VU", "YE"]
+    score_multiplier: 1.0
+    enhanced_due_diligence: true
+  
+  medium_risk:
+    countries: ["CN", "RU", "VE", "MY", "TH", "LB", "UA", "TR", "EG", "NG", "IN"]
+    score_multiplier: 0.6
+    enhanced_due_diligence: false
+  
+  sanctions:
+    countries: ["IR", "KP", "SY", "RU", "BY"]
+    score_multiplier: 1.5
+    blocking_required: true
+  
+  low_risk:
+    countries: ["US", "CA", "GB", "DE", "FR", "AU", "JP", "CH", "NL", "SE", "DK", "NO"]
+    score_multiplier: 0.1
+    enhanced_due_diligence: false
+
+# Geographic patterns to detect
+suspicious_patterns:
+  - name: "impossible_velocity"
+    description: "Transactions from locations too far apart in too short time"
+    threshold: ">1000 miles in <2 hours"
+  
+  - name: "country_hopping"
+    description: "Rapid transactions across multiple countries"
+    threshold: "3+ countries in 24 hours"
+  
+  - name: "border_proximity"
+    description: "Transactions near high-risk borders"
+    regions: ["US-Mexico border", "EU-Eastern Europe border"]
+  
+  - name: "correspondent_banking"
+    description: "Transactions through high-risk correspondent banks"
+    risk_factors: ["Limited transparency", "Weak AML controls"]
+
+# Additional metadata
+tags: ["geographic", "sanctions", "fatf", "jurisdiction"]
+regulatory_basis: "OFAC Sanctions, FATF Recommendations"
+alert_template: "Geographic risk detected: Transaction from ${location.country}"
+
+# Risk scoring factors
+geographic_risk_factors:
+  - name: "fatf_listing"
+    weight: 0.4
+    description: "Country on FATF grey or black list"
+  
+  - name: "sanctions_status"
+    weight: 0.5
+    description: "Country under international sanctions"
+  
+  - name: "corruption_index"
+    weight: 0.2
+    description: "Transparency International corruption score"
+  
+  - name: "customer_connection"
+    weight: -0.3
+    description: "Customer has legitimate connection to country"
+
+# Investigation guidance
+investigation_steps:
+  - "Verify customer's legitimate connection to the country"
+  - "Check OFAC sanctions lists and updates"
+  - "Review correspondent banking relationships"
+  - "Validate beneficiary identity and purpose"
+  - "Document enhanced due diligence findings"
+  - "Consider suspicious activity reporting requirements"
+
+exceptions:
+  - "Customer citizenship or documented residence"
+  - "Established business relationships with documentation"
+  - "Family or personal connections with evidence"
+  - "Travel documentation matching transaction locations"
+
+compliance_requirements:
+  - "Enhanced due diligence for high-risk countries"
+  - "OFAC screening for all parties"
+  - "Documentation of business purpose"
+  - "Senior management approval for high-risk transactions"
+  - "Ongoing monitoring of geographic patterns"
