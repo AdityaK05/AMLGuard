@@ -1,6 +1,43 @@
-node_modules
-dist
+node_modules/
+dist/
+build/
+.esbuild/
 .DS_Store
+Thumbs.db
 server/public
 vite.config.ts.*
 *.tar.gz
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+# Env
+.env
+.env.*
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+# VSCode
+.vscode/
+# Misc
+*.log
+*.sqlite3
+*.db
+# Replit
+.replit
+# Local assets
+attached_assets/
+# Jupyter
+.ipynb_checkpoints/
+# Coverage
+coverage/
+*.cover
+*.coverage
+*.cov
+# Others
+*.swp
+*.swo

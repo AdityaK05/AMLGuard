@@ -12,13 +12,24 @@ interface AuthResponse {
   token: string;
 }
 
+// DEV MODE: Always treat user as logged in
 export function useAuth() {
-  const { data: user, isLoading } = useQuery<User | null>({
-    queryKey: ["/api/auth/me"],
-    retry: false,
-  });
-
-  return { user, isLoading };
+  // Dummy user object (customize as needed)
+  const user = {
+    id: "1",
+    username: "admin",
+    email: "admin@example.com",
+    password: "",
+    firstName: "Admin",
+    lastName: "User",
+    role: "admin",
+    permissions: [],
+    lastLogin: null,
+    isActive: true,
+    createdAt: null,
+    updatedAt: null,
+  } as User;
+  return { user, isLoading: false };
 }
 
 export function useLogin() {

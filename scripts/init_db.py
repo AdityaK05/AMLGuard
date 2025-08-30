@@ -7,6 +7,7 @@ Creates SQLite database and populates with sample data for AMLGuard platform
 import sqlite3
 import asyncio
 import aiosqlite
+import asyncpg
 import json
 import bcrypt
 from datetime import datetime, timedelta
@@ -34,23 +35,98 @@ structlog.configure(
 
 logger = structlog.get_logger()
 
-DATABASE_PATH = "data/amlguard.db"
+import os
+
+DATABASE_URL = os.getenv("DATABASE_URL", "data/amlguard.db")
+IS_POSTGRES = DATABASE_URL.startswith("postgresql://")
+if not IS_POSTGRES:
+    DATABASE_PATH = DATABASE_URL.replace("sqlite:///", "").replace("sqlite://", "")
 
 async def init_database():
-    """Initialize SQLite database with schema and sample data"""
-    
+    """Initialize database (SQLite or PostgreSQL) with schema and sample data"""
     logger.info("Initializing AMLGuard database")
-    
-    # Ensure data directory exists
-    Path("data").mkdir(exist_ok=True)
-    
-    # Create database and schema
-    await create_schema()
-    
-    # Populate with sample data
-    await populate_sample_data()
-    
+    if IS_POSTGRES:
+        await create_schema_postgres()
+        await populate_sample_data_postgres()
+    else:
+        Path("data").mkdir(exist_ok=True)
+        await create_schema()
+        await populate_sample_data()
     logger.info("Database initialization completed")
+async def create_schema_postgres():
+    schema_sql = """
+    CREATE TABLE IF NOT EXISTS users (
+        id TEXT PRIMARY KEY,
+        username TEXT UNIQUE NOT NULL,
+        email TEXT UNIQUE NOT NULL,
+        password TEXT NOT NULL,
+        first_name TEXT NOT NULL,
+        last_name TEXT NOT NULL,
+        role TEXT NOT NULL DEFAULT 'analyst',
+        permissions TEXT DEFAULT '[]',
+        last_login TIMESTAMP,
+        is_active BOOLEAN NOT NULL DEFAULT TRUE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+    """
+    conn = await asyncpg.connect(DATABASE_URL)
+    for stmt in filter(None, map(str.strip, schema_sql.split(";"))):
+        if stmt:
+            await conn.execute(stmt)
+    await conn.close()
+
+async def populate_sample_data_postgres():
+    from uuid import uuid4
+    import bcrypt
+    from datetime import datetime
+    users = [
+        {
+            "id": str(uuid4()),
+            "username": "admin",
+            "email": "admin@amlguard.com",
+            "password": "admin123",
+            "first_name": "Sarah",
+            "last_name": "Chen",
+            "role": "admin",
+            "permissions": '["read", "write", "admin"]'
+        },
+        {
+            "id": str(uuid4()),
+            "username": "analyst1",
+            "email": "analyst1@amlguard.com",
+            "password": "analyst123",
+            "first_name": "Michael",
+            "last_name": "Rodriguez",
+            "role": "analyst",
+            "permissions": '["read", "write"]'
+        },
+        {
+            "id": str(uuid4()),
+            "username": "reviewer",
+            "email": "reviewer@amlguard.com",
+            "password": "reviewer123",
+            "first_name": "Lisa",
+            "last_name": "Wang",
+            "role": "reviewer",
+            "permissions": '["read"]'
+        }
+    ]
+    conn = await asyncpg.connect(DATABASE_URL)
+    for user in users:
+        hashed_password = bcrypt.hashpw(user["password"].encode(), bcrypt.gensalt()).decode()
+        await conn.execute(
+            """
+            INSERT INTO users (id, username, email, password, first_name, last_name, role, permissions, is_active, created_at, updated_at)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+            ON CONFLICT (username) DO NOTHING
+            """,
+            user["id"], user["username"], user["email"], hashed_password,
+            user["first_name"], user["last_name"], user["role"], user["permissions"],
+            True, datetime.utcnow(), datetime.utcnow()
+        )
+    await conn.close()
+    logger.info(f"Created {len(users)} default users in PostgreSQL")
 
 async def create_schema():
     """Create database schema"""

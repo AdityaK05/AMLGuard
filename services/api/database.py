@@ -5,19 +5,19 @@ Database configuration and connection management
 import os
 import sqlite3
 import aiosqlite
+import asyncpg
 from pathlib import Path
 import structlog
 
 logger = structlog.get_logger()
 
 DATABASE_URL = os.getenv("DATABASE_URL", "data/amlguard.db")
-DB_PATH = Path(DATABASE_URL.replace("sqlite:///", "").replace("sqlite://", ""))
+IS_POSTGRES = DATABASE_URL.startswith("postgresql://")
+if not IS_POSTGRES:
+    DB_PATH = Path(DATABASE_URL.replace("sqlite:///", "").replace("sqlite://", ""))
 
 async def init_db():
     """Initialize SQLite database with schema"""
-    
-    # Ensure data directory exists
-    DB_PATH.parent.mkdir(exist_ok=True)
     
     schema_sql = """
     -- Users table
@@ -154,14 +154,31 @@ async def init_db():
     );
     """
     
-    async with aiosqlite.connect(DB_PATH) as db:
-        await db.executescript(schema_sql)
-        await db.commit()
-    
-    logger.info("Database schema initialized", db_path=str(DB_PATH))
+    if IS_POSTGRES:
+        conn = await asyncpg.connect(DATABASE_URL)
+        # asyncpg does not support executescript, so split by ;
+        for stmt in filter(None, map(str.strip, schema_sql.split(";"))):
+            if stmt:
+                await conn.execute(stmt)
+        await conn.close()
+        logger.info("Database schema initialized", db_url=DATABASE_URL)
+    else:
+        # Ensure data directory exists
+        DB_PATH.parent.mkdir(exist_ok=True)
+        async with aiosqlite.connect(DB_PATH) as db:
+            await db.executescript(schema_sql)
+            await db.commit()
+        logger.info("Database schema initialized", db_path=str(DB_PATH))
 
 async def get_db():
     """Get database connection"""
-    async with aiosqlite.connect(DB_PATH) as db:
-        db.row_factory = aiosqlite.Row
-        yield db
+    if IS_POSTGRES:
+        conn = await asyncpg.connect(DATABASE_URL)
+        try:
+            yield conn
+        finally:
+            await conn.close()
+    else:
+        async with aiosqlite.connect(DB_PATH) as db:
+            db.row_factory = aiosqlite.Row
+            yield db

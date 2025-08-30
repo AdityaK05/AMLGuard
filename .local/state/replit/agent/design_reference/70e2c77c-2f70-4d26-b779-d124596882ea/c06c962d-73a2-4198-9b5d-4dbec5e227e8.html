@@ -1,0 +1,711 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AMLGuard - Anti-Money Laundering Compliance Platform</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+    tailwind.config = {
+        theme: {
+            extend: {
+                borderRadius: {
+                    lg: "var(--radius)",
+                    md: "calc(var(--radius) - 2px)",
+                    sm: "calc(var(--radius) - 4px)",
+                },
+                colors: {
+                    background: "var(--background)",
+                    foreground: "var(--foreground)",
+                    card: {
+                        DEFAULT: "var(--card)",
+                        foreground: "var(--card-foreground)",
+                    },
+                    popover: {
+                        DEFAULT: "var(--popover)",
+                        foreground: "var(--popover-foreground)",
+                    },
+                    primary: {
+                        DEFAULT: "var(--primary)",
+                        foreground: "var(--primary-foreground)",
+                    },
+                    secondary: {
+                        DEFAULT: "var(--secondary)",
+                        foreground: "var(--secondary-foreground)",
+                    },
+                    muted: {
+                        DEFAULT: "var(--muted)",
+                        foreground: "var(--muted-foreground)",
+                    },
+                    accent: {
+                        DEFAULT: "var(--accent)",
+                        foreground: "var(--accent-foreground)",
+                    },
+                    destructive: {
+                        DEFAULT: "var(--destructive)",
+                        foreground: "var(--destructive-foreground)",
+                    },
+                    border: "var(--border)",
+                    input: "var(--input)",
+                    ring: "var(--ring)",
+                    chart: {
+                        "1": "var(--chart-1)",
+                        "2": "var(--chart-2)",
+                        "3": "var(--chart-3)",
+                        "4": "var(--chart-4)",
+                        "5": "var(--chart-5)",
+                    }
+                },
+                fontFamily: {
+                    sans: ["var(--font-sans)"],
+                }
+            },
+        }
+    };
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --radius: 8px;
+            --background: hsl(220 14% 96%);
+            --foreground: hsl(220 9% 9%);
+            --card: hsl(0 0% 100%);
+            --card-foreground: hsl(220 9% 9%);
+            --popover: hsl(0 0% 100%);
+            --popover-foreground: hsl(220 9% 9%);
+            --primary: hsl(220 91% 50%);
+            --primary-foreground: hsl(0 0% 98%);
+            --secondary: hsl(220 14% 91%);
+            --secondary-foreground: hsl(220 9% 9%);
+            --muted: hsl(220 14% 91%);
+            --muted-foreground: hsl(220 9% 46%);
+            --accent: hsl(220 14% 91%);
+            --accent-foreground: hsl(220 9% 9%);
+            --destructive: hsl(0 84% 60%);
+            --destructive-foreground: hsl(0 0% 98%);
+            --border: hsl(220 13% 86%);
+            --input: hsl(220 13% 86%);
+            --ring: hsl(220 91% 50%);
+            --chart-1: hsl(220 70% 50%);
+            --chart-2: hsl(160 60% 45%);
+            --chart-3: hsl(30 80% 55%);
+            --chart-4: hsl(280 65% 60%);
+            --chart-5: hsl(340 75% 55%);
+            --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+        }
+        
+        .dark {
+            --background: hsl(220 14% 8%);
+            --foreground: hsl(220 9% 91%);
+            --card: hsl(220 14% 11%);
+            --card-foreground: hsl(220 9% 91%);
+            --popover: hsl(220 14% 11%);
+            --popover-foreground: hsl(220 9% 91%);
+            --primary: hsl(220 91% 60%);
+            --primary-foreground: hsl(220 14% 8%);
+            --secondary: hsl(220 14% 14%);
+            --secondary-foreground: hsl(220 9% 91%);
+            --muted: hsl(220 14% 14%);
+            --muted-foreground: hsl(220 9% 54%);
+            --accent: hsl(220 14% 14%);
+            --accent-foreground: hsl(220 9% 91%);
+            --destructive: hsl(0 62% 50%);
+            --destructive-foreground: hsl(0 0% 98%);
+            --border: hsl(220 14% 18%);
+            --input: hsl(220 14% 18%);
+            --ring: hsl(220 91% 60%);
+        }
+        
+        body { 
+            font-family: var(--font-sans);
+            background-color: hsl(var(--background));
+        }
+        
+        .status-high { @apply bg-red-100 text-red-800 border-red-200; }
+        .status-medium { @apply bg-amber-100 text-amber-800 border-amber-200; }
+        .status-low { @apply bg-blue-100 text-blue-800 border-blue-200; }
+        .status-resolved { @apply bg-green-100 text-green-800 border-green-200; }
+        
+        .metric-card {
+            transition: all 0.2s ease-in-out;
+        }
+        .metric-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        }
+        
+        .table-row:hover {
+            background-color: hsl(var(--muted));
+        }
+        
+        .sidebar-link {
+            transition: all 0.15s ease-in-out;
+        }
+        .sidebar-link:hover {
+            background-color: hsl(var(--accent));
+            border-radius: 6px;
+        }
+        .sidebar-link.active {
+            background-color: hsl(var(--primary));
+            color: hsl(var(--primary-foreground));
+            border-radius: 6px;
+        }
+    </style>
+</head>
+
+<body class="bg-background text-foreground">
+    <!-- @COMPONENT: Layout Container -->
+    <div class="flex h-screen bg-background">
+        
+        <!-- @COMPONENT: Sidebar Navigation -->
+        <aside class="w-64 bg-card border-r border-border shadow-sm">
+            <div class="p-6 border-b border-border">
+                <div class="flex items-center space-x-3">
+                    <div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+                        <i class="fas fa-shield-alt text-primary-foreground text-sm"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-lg font-semibold text-foreground">AMLGuard</h1>
+                        <p class="text-xs text-muted-foreground">Compliance Platform</p>
+                    </div>
+                </div>
+            </div>
+            
+            <nav class="p-4 space-y-1">
+                <!-- @STATE: activeTab:string = 'dashboard' -->
+                <a href="#" class="sidebar-link active flex items-center space-x-3 px-3 py-2 text-sm font-medium">
+                    <i class="fas fa-chart-line w-4"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="#" class="sidebar-link flex items-center space-x-3 px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground">
+                    <i class="fas fa-exclamation-triangle w-4"></i>
+                    <span>Alerts</span>
+                    <span class="ml-auto bg-destructive text-destructive-foreground text-xs px-2 py-1 rounded-full">23</span>
+                </a>
+                <a href="#" class="sidebar-link flex items-center space-x-3 px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground">
+                    <i class="fas fa-exchange-alt w-4"></i>
+                    <span>Transactions</span>
+                </a>
+                <a href="#" class="sidebar-link flex items-center space-x-3 px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground">
+                    <i class="fas fa-briefcase w-4"></i>
+                    <span>Cases</span>
+                    <span class="ml-auto bg-amber-500 text-white text-xs px-2 py-1 rounded-full">7</span>
+                </a>
+                <a href="#" class="sidebar-link flex items-center space-x-3 px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground">
+                    <i class="fas fa-cogs w-4"></i>
+                    <span>Rules Engine</span>
+                </a>
+                <a href="#" class="sidebar-link flex items-center space-x-3 px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground">
+                    <i class="fas fa-brain w-4"></i>
+                    <span>ML Models</span>
+                </a>
+                <a href="#" class="sidebar-link flex items-center space-x-3 px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground">
+                    <i class="fas fa-chart-bar w-4"></i>
+                    <span>Analytics</span>
+                </a>
+                
+                <div class="pt-4 border-t border-border mt-4">
+                    <a href="#" class="sidebar-link flex items-center space-x-3 px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground">
+                        <i class="fas fa-users w-4"></i>
+                        <span>Users</span>
+                    </a>
+                    <a href="#" class="sidebar-link flex items-center space-x-3 px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground">
+                        <i class="fas fa-cog w-4"></i>
+                        <span>Settings</span>
+                    </a>
+                </div>
+            </nav>
+        </aside>
+        <!-- @END_COMPONENT: Sidebar Navigation -->
+
+        <!-- @COMPONENT: Main Content Area -->
+        <main class="flex-1 overflow-auto">
+            
+            <!-- @COMPONENT: Header Bar -->
+            <header class="bg-card border-b border-border px-6 py-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-2xl font-semibold text-foreground">AML Monitoring Dashboard</h2>
+                        <p class="text-muted-foreground">Real-time compliance monitoring and risk assessment</p>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <button class="relative p-2 text-muted-foreground hover:text-foreground">
+                            <i class="fas fa-bell text-lg"></i>
+                            <span class="absolute -top-1 -right-1 bg-destructive text-destructive-foreground text-xs w-5 h-5 rounded-full flex items-center justify-center">3</span>
+                        </button>
+                        <div class="flex items-center space-x-3">
+                            <div class="text-right">
+                                <p class="text-sm font-medium text-foreground" data-bind="user.name">Sarah Chen</p>
+                                <p class="text-xs text-muted-foreground" data-bind="user.role">Senior Compliance Analyst</p>
+                            </div>
+                            <div class="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
+                                <span class="text-primary-foreground text-sm font-medium">SC</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+            <!-- @END_COMPONENT: Header Bar -->
+
+            <!-- @COMPONENT: Dashboard Content -->
+            <div class="p-6 space-y-6">
+                
+                <!-- @COMPONENT: Key Metrics Row -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div class="metric-card bg-card rounded-lg border border-border p-6">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-muted-foreground text-sm font-medium">Active Alerts</p>
+                                <p class="text-2xl font-bold text-foreground" data-bind="metrics.activeAlerts">23</p>
+                                <p class="text-xs text-destructive mt-1">+12% from yesterday</p>
+                            </div>
+                            <div class="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-exclamation-triangle text-red-600 text-lg"></i>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="metric-card bg-card rounded-lg border border-border p-6">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-muted-foreground text-sm font-medium">Daily Transactions</p>
+                                <p class="text-2xl font-bold text-foreground" data-bind="metrics.dailyTransactions">12,847</p>
+                                <p class="text-xs text-green-600 mt-1">+5.2% from yesterday</p>
+                            </div>
+                            <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-exchange-alt text-blue-600 text-lg"></i>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="metric-card bg-card rounded-lg border border-border p-6">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-muted-foreground text-sm font-medium">Risk Score Avg</p>
+                                <p class="text-2xl font-bold text-foreground" data-bind="metrics.avgRiskScore">2.3</p>
+                                <p class="text-xs text-green-600 mt-1">-0.1 from yesterday</p>
+                            </div>
+                            <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-chart-line text-green-600 text-lg"></i>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="metric-card bg-card rounded-lg border border-border p-6">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-muted-foreground text-sm font-medium">Open Cases</p>
+                                <p class="text-2xl font-bold text-foreground" data-bind="metrics.openCases">7</p>
+                                <p class="text-xs text-amber-600 mt-1">2 urgent</p>
+                            </div>
+                            <div class="w-12 h-12 bg-amber-100 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-briefcase text-amber-600 text-lg"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- @END_COMPONENT: Key Metrics Row -->
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    
+                    <!-- @COMPONENT: Recent High-Risk Alerts -->
+                    <div class="lg:col-span-2 bg-card rounded-lg border border-border">
+                        <div class="p-6 border-b border-border">
+                            <div class="flex items-center justify-between">
+                                <h3 class="text-lg font-semibold text-foreground">High-Risk Alerts</h3>
+                                <button class="text-primary hover:text-primary/80 text-sm font-medium">View All</button>
+                            </div>
+                        </div>
+                        <div class="divide-y divide-border">
+                            <!-- @MAP: highRiskAlerts.map(alert => ( -->
+                            <div class="table-row p-4 hover:bg-muted/50 cursor-pointer" data-event="click:viewAlert">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center space-x-3">
+                                        <div class="w-3 h-3 bg-red-500 rounded-full"></div>
+                                        <div>
+                                            <p class="font-medium text-foreground" data-bind="alert.title">Structuring Pattern Detected</p>
+                                            <p class="text-sm text-muted-foreground">Customer: <span data-bind="alert.customerName">Marcus Johnson</span> • Account: <span data-bind="alert.accountId">****4521</span></p>
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <span class="status-high inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border">
+                                            Critical
+                                        </span>
+                                        <p class="text-xs text-muted-foreground mt-1" data-bind="alert.createdAt">2 min ago</p>
+                                    </div>
+                                </div>
+                                <div class="mt-2 ml-6">
+                                    <p class="text-sm text-muted-foreground" data-bind="alert.description">Multiple transactions just below $10,000 threshold within 24 hours</p>
+                                </div>
+                            </div>
+                            
+                            <div class="table-row p-4 hover:bg-muted/50 cursor-pointer" data-event="click:viewAlert">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center space-x-3">
+                                        <div class="w-3 h-3 bg-red-500 rounded-full"></div>
+                                        <div>
+                                            <p class="font-medium text-foreground">Unusual Geographic Activity</p>
+                                            <p class="text-sm text-muted-foreground">Customer: Lisa Wang • Account: ****7892</p>
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <span class="status-high inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border">
+                                            Critical
+                                        </span>
+                                        <p class="text-xs text-muted-foreground mt-1">5 min ago</p>
+                                    </div>
+                                </div>
+                                <div class="mt-2 ml-6">
+                                    <p class="text-sm text-muted-foreground">Transactions from 3 different countries within 1 hour</p>
+                                </div>
+                            </div>
+                            
+                            <div class="table-row p-4 hover:bg-muted/50 cursor-pointer" data-event="click:viewAlert">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center space-x-3">
+                                        <div class="w-3 h-3 bg-amber-500 rounded-full"></div>
+                                        <div>
+                                            <p class="font-medium text-foreground">High-Velocity Transfers</p>
+                                            <p class="text-sm text-muted-foreground">Customer: Robert Chen • Account: ****3456</p>
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <span class="status-medium inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border">
+                                            Medium
+                                        </span>
+                                        <p class="text-xs text-muted-foreground mt-1">12 min ago</p>
+                                    </div>
+                                </div>
+                                <div class="mt-2 ml-6">
+                                    <p class="text-sm text-muted-foreground">15 outbound transfers in rapid succession</p>
+                                </div>
+                            </div>
+                            <!-- @END_MAP )) -->
+                        </div>
+                    </div>
+                    <!-- @END_COMPONENT: Recent High-Risk Alerts -->
+
+                    <!-- @COMPONENT: System Status -->
+                    <div class="bg-card rounded-lg border border-border">
+                        <div class="p-6 border-b border-border">
+                            <h3 class="text-lg font-semibold text-foreground">System Status</h3>
+                        </div>
+                        <div class="p-6 space-y-4">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                                    <span class="text-sm font-medium text-foreground">ML Engine</span>
+                                </div>
+                                <span class="text-xs text-muted-foreground">Operational</span>
+                            </div>
+                            
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                                    <span class="text-sm font-medium text-foreground">Rules Engine</span>
+                                </div>
+                                <span class="text-xs text-muted-foreground">Operational</span>
+                            </div>
+                            
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                                    <span class="text-sm font-medium text-foreground">Stream Processing</span>
+                                </div>
+                                <span class="text-xs text-muted-foreground">Operational</span>
+                            </div>
+                            
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-2 h-2 bg-amber-500 rounded-full"></div>
+                                    <span class="text-sm font-medium text-foreground">Data Pipeline</span>
+                                </div>
+                                <span class="text-xs text-muted-foreground">Degraded</span>
+                            </div>
+                            
+                            <div class="pt-4 border-t border-border">
+                                <div class="text-sm font-medium text-foreground mb-2">Model Performance</div>
+                                <div class="space-y-2">
+                                    <div class="flex justify-between text-xs">
+                                        <span class="text-muted-foreground">Accuracy</span>
+                                        <span class="text-foreground font-medium">94.2%</span>
+                                    </div>
+                                    <div class="w-full bg-muted rounded-full h-2">
+                                        <div class="bg-green-500 h-2 rounded-full" style="width: 94.2%"></div>
+                                    </div>
+                                    
+                                    <div class="flex justify-between text-xs">
+                                        <span class="text-muted-foreground">Precision</span>
+                                        <span class="text-foreground font-medium">89.7%</span>
+                                    </div>
+                                    <div class="w-full bg-muted rounded-full h-2">
+                                        <div class="bg-blue-500 h-2 rounded-full" style="width: 89.7%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- @END_COMPONENT: System Status -->
+                </div>
+
+                <!-- @COMPONENT: Recent Transactions Table -->
+                <div class="bg-card rounded-lg border border-border">
+                    <div class="p-6 border-b border-border">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-lg font-semibold text-foreground">Recent Transactions</h3>
+                            <div class="flex items-center space-x-3">
+                                <select class="bg-background border border-border rounded-md px-3 py-1 text-sm">
+                                    <option>All Risk Levels</option>
+                                    <option>High Risk Only</option>
+                                    <option>Medium Risk Only</option>
+                                </select>
+                                <button class="bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium hover:bg-primary/90">
+                                    Export
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead class="bg-muted/30">
+                                <tr>
+                                    <th class="text-left p-4 text-sm font-medium text-muted-foreground">Transaction ID</th>
+                                    <th class="text-left p-4 text-sm font-medium text-muted-foreground">Customer</th>
+                                    <th class="text-left p-4 text-sm font-medium text-muted-foreground">Amount</th>
+                                    <th class="text-left p-4 text-sm font-medium text-muted-foreground">Type</th>
+                                    <th class="text-left p-4 text-sm font-medium text-muted-foreground">Risk Score</th>
+                                    <th class="text-left p-4 text-sm font-medium text-muted-foreground">Status</th>
+                                    <th class="text-left p-4 text-sm font-medium text-muted-foreground">Time</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-border">
+                                <!-- @MAP: recentTransactions.map(transaction => ( -->
+                                <tr class="table-row hover:bg-muted/50 cursor-pointer" data-event="click:viewTransaction">
+                                    <td class="p-4">
+                                        <span class="text-sm font-mono text-foreground" data-bind="transaction.id">TXN-2024-001547</span>
+                                    </td>
+                                    <td class="p-4">
+                                        <div>
+                                            <p class="text-sm font-medium text-foreground" data-bind="transaction.customer">Marcus Johnson</p>
+                                            <p class="text-xs text-muted-foreground" data-bind="transaction.account">Account ****4521</p>
+                                        </div>
+                                    </td>
+                                    <td class="p-4">
+                                        <span class="text-sm font-medium text-foreground" data-bind="transaction.amount">$9,850.00</span>
+                                    </td>
+                                    <td class="p-4">
+                                        <span class="text-sm text-muted-foreground" data-bind="transaction.type">Wire Transfer</span>
+                                    </td>
+                                    <td class="p-4">
+                                        <div class="flex items-center space-x-2">
+                                            <span class="text-sm font-medium text-red-600" data-bind="transaction.riskScore">8.7</span>
+                                            <div class="w-16 bg-muted rounded-full h-2">
+                                                <div class="bg-red-500 h-2 rounded-full" style="width: 87%"></div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="p-4">
+                                        <span class="status-high inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border">
+                                            Flagged
+                                        </span>
+                                    </td>
+                                    <td class="p-4">
+                                        <span class="text-sm text-muted-foreground" data-bind="transaction.timestamp">2 min ago</span>
+                                    </td>
+                                </tr>
+                                
+                                <tr class="table-row hover:bg-muted/50 cursor-pointer" data-event="click:viewTransaction">
+                                    <td class="p-4">
+                                        <span class="text-sm font-mono text-foreground">TXN-2024-001546</span>
+                                    </td>
+                                    <td class="p-4">
+                                        <div>
+                                            <p class="text-sm font-medium text-foreground">Lisa Wang</p>
+                                            <p class="text-xs text-muted-foreground">Account ****7892</p>
+                                        </div>
+                                    </td>
+                                    <td class="p-4">
+                                        <span class="text-sm font-medium text-foreground">$2,450.00</span>
+                                    </td>
+                                    <td class="p-4">
+                                        <span class="text-sm text-muted-foreground">ATM Withdrawal</span>
+                                    </td>
+                                    <td class="p-4">
+                                        <div class="flex items-center space-x-2">
+                                            <span class="text-sm font-medium text-red-600">9.2</span>
+                                            <div class="w-16 bg-muted rounded-full h-2">
+                                                <div class="bg-red-500 h-2 rounded-full" style="width: 92%"></div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="p-4">
+                                        <span class="status-high inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border">
+                                            Flagged
+                                        </span>
+                                    </td>
+                                    <td class="p-4">
+                                        <span class="text-sm text-muted-foreground">5 min ago</span>
+                                    </td>
+                                </tr>
+                                
+                                <tr class="table-row hover:bg-muted/50 cursor-pointer" data-event="click:viewTransaction">
+                                    <td class="p-4">
+                                        <span class="text-sm font-mono text-foreground">TXN-2024-001545</span>
+                                    </td>
+                                    <td class="p-4">
+                                        <div>
+                                            <p class="text-sm font-medium text-foreground">Robert Chen</p>
+                                            <p class="text-xs text-muted-foreground">Account ****3456</p>
+                                        </div>
+                                    </td>
+                                    <td class="p-4">
+                                        <span class="text-sm font-medium text-foreground">$567.89</span>
+                                    </td>
+                                    <td class="p-4">
+                                        <span class="text-sm text-muted-foreground">Online Transfer</span>
+                                    </td>
+                                    <td class="p-4">
+                                        <div class="flex items-center space-x-2">
+                                            <span class="text-sm font-medium text-amber-600">5.4</span>
+                                            <div class="w-16 bg-muted rounded-full h-2">
+                                                <div class="bg-amber-500 h-2 rounded-full" style="width: 54%"></div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="p-4">
+                                        <span class="status-medium inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border">
+                                            Review
+                                        </span>
+                                    </td>
+                                    <td class="p-4">
+                                        <span class="text-sm text-muted-foreground">12 min ago</span>
+                                    </td>
+                                </tr>
+                                
+                                <tr class="table-row hover:bg-muted/50 cursor-pointer" data-event="click:viewTransaction">
+                                    <td class="p-4">
+                                        <span class="text-sm font-mono text-foreground">TXN-2024-001544</span>
+                                    </td>
+                                    <td class="p-4">
+                                        <div>
+                                            <p class="text-sm font-medium text-foreground">Emma Rodriguez</p>
+                                            <p class="text-xs text-muted-foreground">Account ****9123</p>
+                                        </div>
+                                    </td>
+                                    <td class="p-4">
+                                        <span class="text-sm font-medium text-foreground">$125.00</span>
+                                    </td>
+                                    <td class="p-4">
+                                        <span class="text-sm text-muted-foreground">Card Payment</span>
+                                    </td>
+                                    <td class="p-4">
+                                        <div class="flex items-center space-x-2">
+                                            <span class="text-sm font-medium text-green-600">1.2</span>
+                                            <div class="w-16 bg-muted rounded-full h-2">
+                                                <div class="bg-green-500 h-2 rounded-full" style="width: 12%"></div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="p-4">
+                                        <span class="status-resolved inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border">
+                                            Clear
+                                        </span>
+                                    </td>
+                                    <td class="p-4">
+                                        <span class="text-sm text-muted-foreground">15 min ago</span>
+                                    </td>
+                                </tr>
+                                <!-- @END_MAP )) -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="p-4 border-t border-border">
+                        <div class="flex items-center justify-between">
+                            <p class="text-sm text-muted-foreground">Showing 4 of 12,847 transactions</p>
+                            <div class="flex items-center space-x-2">
+                                <button class="px-3 py-1 text-sm border border-border rounded-md hover:bg-muted">Previous</button>
+                                <button class="px-3 py-1 text-sm bg-primary text-primary-foreground rounded-md">1</button>
+                                <button class="px-3 py-1 text-sm border border-border rounded-md hover:bg-muted">2</button>
+                                <button class="px-3 py-1 text-sm border border-border rounded-md hover:bg-muted">Next</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- @END_COMPONENT: Recent Transactions Table -->
+            </div>
+            <!-- @END_COMPONENT: Dashboard Content -->
+        </main>
+        <!-- @END_COMPONENT: Main Content Area -->
+    </div>
+    <!-- @END_COMPONENT: Layout Container -->
+
+    <script>
+        // TODO: Implement real-time data updates via WebSocket or Server-Sent Events
+        // TODO: Add interactive chart components for risk score trends
+        // TODO: Implement alert management actions (assign, resolve, escalate)
+        // TODO: Add transaction detail modal with ML feature explanations
+        // TODO: Implement role-based access control for PII masking
+        
+        (function() {
+            // Mock real-time updates for demo purposes
+            function updateMetrics() {
+                // TODO: Replace with real API calls to /api/metrics endpoint
+                console.log('Updating dashboard metrics...');
+                
+                // TODO: Update alert counts, transaction volumes, risk scores
+                // TODO: Refresh recent alerts and transactions lists
+                // TODO: Update system status indicators
+            }
+            
+            // Initialize dashboard
+            document.addEventListener('DOMContentLoaded', function() {
+                console.log('AMLGuard Dashboard initialized');
+                
+                // TODO: Set up real-time data refresh interval
+                // TODO: Initialize WebSocket connection for live updates
+                // TODO: Load user preferences and dashboard configuration
+                
+                // Mock periodic updates (replace with real-time data)
+                setInterval(updateMetrics, 30000); // Update every 30 seconds
+            });
+            
+            // Navigation handling
+            document.querySelectorAll('.sidebar-link').forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    // TODO: Implement proper routing and view switching
+                    // TODO: Load appropriate dashboard view based on selection
+                    // TODO: Update URL state for bookmarkable navigation
+                    
+                    // Remove active class from all links
+                    document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+                    // Add active class to clicked link
+                    this.classList.add('active');
+                });
+            });
+            
+            // Alert and transaction row click handlers
+            document.querySelectorAll('[data-event="click:viewAlert"]').forEach(row => {
+                row.addEventListener('click', function() {
+                    // TODO: Open alert detail modal with full transaction context
+                    // TODO: Show ML model explanation and feature importance
+                    // TODO: Provide action buttons for case assignment and resolution
+                    console.log('Opening alert detail view...');
+                });
+            });
+            
+            document.querySelectorAll('[data-event="click:viewTransaction"]').forEach(row => {
+                row.addEventListener('click', function() {
+                    // TODO: Open transaction detail modal with risk analysis
+                    // TODO: Display customer context and transaction history
+                    // TODO: Show applicable rules and ML predictions
+                    console.log('Opening transaction detail view...');
+                });
+            });
+        })();
+    </script>
+</body>
+</html>
